@@ -1,0 +1,108 @@
+diff --git a/InfoAboutPC/Form1.Designer.cs b/InfoAboutPC/Form1.Designer.cs
+index 75088c0..e5a12ab 100644
+--- a/InfoAboutPC/Form1.Designer.cs
++++ b/InfoAboutPC/Form1.Designer.cs
+@@ -95,8 +95,8 @@
+         #endregion
+ 
+         private System.Windows.Forms.Button btnGetInfo;
+-        private System.Windows.Forms.TreeView treeViewInfo; // Объявляем TreeView
+-        private System.Windows.Forms.DataVisualization.Charting.Chart chartCPU; // Объявляем график CPU
+-        private System.Windows.Forms.DataVisualization.Charting.Chart chartRAM; // Объявляем график RAM
++        private System.Windows.Forms.TreeView treeViewInfo;
++        private System.Windows.Forms.DataVisualization.Charting.Chart chartCPU;
++        private System.Windows.Forms.DataVisualization.Charting.Chart chartRAM;
+     }
+ }
+\ No newline at end of file
+diff --git a/InfoAboutPC/Form1.cs b/InfoAboutPC/Form1.cs
+index e08c8ec..7c8d00f 100644
+--- a/InfoAboutPC/Form1.cs
++++ b/InfoAboutPC/Form1.cs
+@@ -1,5 +1,4 @@
+-﻿
+-using System.Diagnostics;
++﻿using System.Diagnostics;
+ using System.Management;
+ using System.Net;
+ using System.Windows.Forms.DataVisualization.Charting;
+@@ -8,6 +7,7 @@ namespace InfoAboutPC
+ {
+     public partial class Form1 : Form
+     {
++        private System.Windows.Forms.Timer timer;
+         private PerformanceCounter cpuCounter;
+         private PerformanceCounter ramCounter;
+ 
+@@ -21,12 +21,29 @@ namespace InfoAboutPC
+         private void InitializePerformanceCounters()
+         {
+             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+-            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
++            ramCounter = new PerformanceCounter("Memory", "%Commited Bytes In Use");
++            timer = new System.Windows.Forms.Timer();
++            timer.Interval = 1000;
++            timer.Tick += Timer_Tick;
++            timer.Start();
++        }
++
++        private void Timer_Tick(object sender, EventArgs e)
++        {
++            float currentCpuUsage = cpuCounter.NextValue();
++            float currentRamUsage = ramCounter.NextValue();
++            chartCPU.Series["CPU Usage"].Points.AddY(currentCpuUsage);
++            chartRAM.Series["RAM Usage"].Points.AddY(currentRamUsage);
++            if (chartCPU.Series["CPU Usage"].Points.Count > 60)
++                chartCPU.Series["CPU Usage"].Points.RemoveAt(0);
++            if (chartRAM.Series["RAM Usage"].Points.Count > 60)
++                chartRAM.Series["RAM Usage"].Points.RemoveAt(0);
+         }
+ 
+         private void SetupCharts()
+         {
+-            chartCPU.Series.Clear();
++            ChartArea chartAreaCPU = new ChartArea("CPUUsageArea");
++            chartCPU.ChartAreas.Add(chartAreaCPU);
+             var seriesCPU = new Series("CPU Usage")
+             {
+                 ChartType = SeriesChartType.Line,
+@@ -36,8 +53,9 @@ namespace InfoAboutPC
+             };
+             chartCPU.Series.Add(seriesCPU);
+ 
+-            chartRAM.Series.Clear();
+-            var seriesRAM = new Series("Available RAM")
++            ChartArea chartAreaRAM = new ChartArea("RAMUsageArea");
++            chartRAM.ChartAreas.Add(chartAreaRAM);
++            var seriesRAM = new Series("RAM Usage")
+             {
+                 ChartType = SeriesChartType.Line,
+                 Color = Color.Blue,
+@@ -51,7 +69,6 @@ namespace InfoAboutPC
+         {
+             treeViewInfo.Nodes.Clear();
+             GetSystemInfo();
+-            UpdateCharts();
+         }
+ 
+         private void GetSystemInfo()
+@@ -114,19 +131,6 @@ namespace InfoAboutPC
+             treeViewInfo.Nodes.Add(systemInfoNode);
+         }
+ 
+-        private void UpdateCharts()
+-        {
+-            float cpuUsage = cpuCounter.NextValue();
+-            float availableRam = ramCounter.NextValue();
+-
+-            chartCPU.Series["CPU Usage"].Points.AddY(cpuUsage);
+-
+-            chartRAM.Series["Available RAM"].Points.AddY(availableRam);
+-
+-            treeViewInfo.Nodes[0].Nodes.Add($"Текущая загрузка CPU: {cpuUsage}%");
+-            treeViewInfo.Nodes[0].Nodes.Add($"Доступная RAM: {availableRam} MB");
+-        }
+-
+         private string GetLocalIPAddress()
+         {
+             string localIP = "Не удалось получить IP-адрес";

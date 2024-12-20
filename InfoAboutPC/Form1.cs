@@ -1,5 +1,4 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Management;
 using System.Net;
 using System.Windows.Forms.DataVisualization.Charting;
@@ -8,6 +7,7 @@ namespace InfoAboutPC
 {
     public partial class Form1 : Form
     {
+        private System.Windows.Forms.Timer timer;
         private PerformanceCounter cpuCounter;
         private PerformanceCounter ramCounter;
 
@@ -21,12 +21,29 @@ namespace InfoAboutPC
         private void InitializePerformanceCounters()
         {
             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+            ramCounter = new PerformanceCounter("Memory", "%Commited Bytes In Use");
+            timer = new System.Windows.Forms.Timer();
+            timer.Interval = 1000;
+            timer.Tick += Timer_Tick;
+            timer.Start();
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            float currentCpuUsage = cpuCounter.NextValue();
+            float currentRamUsage = ramCounter.NextValue();
+            chartCPU.Series["CPU Usage"].Points.AddY(currentCpuUsage);
+            chartRAM.Series["RAM Usage"].Points.AddY(currentRamUsage);
+            if (chartCPU.Series["CPU Usage"].Points.Count > 60)
+                chartCPU.Series["CPU Usage"].Points.RemoveAt(0);
+            if (chartRAM.Series["RAM Usage"].Points.Count > 60)
+                chartRAM.Series["RAM Usage"].Points.RemoveAt(0);
         }
 
         private void SetupCharts()
         {
-            chartCPU.Series.Clear();
+            ChartArea chartAreaCPU = new ChartArea("CPUUsageArea");
+            chartCPU.ChartAreas.Add(chartAreaCPU);
             var seriesCPU = new Series("CPU Usage")
             {
                 ChartType = SeriesChartType.Line,
@@ -36,8 +53,9 @@ namespace InfoAboutPC
             };
             chartCPU.Series.Add(seriesCPU);
 
-            chartRAM.Series.Clear();
-            var seriesRAM = new Series("Available RAM")
+            ChartArea chartAreaRAM = new ChartArea("RAMUsageArea");
+            chartRAM.ChartAreas.Add(chartAreaRAM);
+            var seriesRAM = new Series("RAM Usage")
             {
                 ChartType = SeriesChartType.Line,
                 Color = Color.Blue,
@@ -45,13 +63,6 @@ namespace InfoAboutPC
                 IsValueShownAsLabel = true
             };
             chartRAM.Series.Add(seriesRAM);
-        }
-
-        private void btnGetInfo_Click(object sender, EventArgs e)
-        {
-            treeViewInfo.Nodes.Clear();
-            GetSystemInfo();
-            UpdateCharts();
         }
 
         private void GetSystemInfo()
@@ -112,19 +123,6 @@ namespace InfoAboutPC
             }
             systemInfoNode.Nodes.Add(disksNode);
             treeViewInfo.Nodes.Add(systemInfoNode);
-        }
-
-        private void UpdateCharts()
-        {
-            float cpuUsage = cpuCounter.NextValue();
-            float availableRam = ramCounter.NextValue();
-
-            chartCPU.Series["CPU Usage"].Points.AddY(cpuUsage);
-
-            chartRAM.Series["Available RAM"].Points.AddY(availableRam);
-
-            treeViewInfo.Nodes[0].Nodes.Add($"Текущая загрузка CPU: {cpuUsage}%");
-            treeViewInfo.Nodes[0].Nodes.Add($"Доступная RAM: {availableRam} MB");
         }
 
         private string GetLocalIPAddress()

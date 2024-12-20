@@ -46,7 +46,7 @@
             btnGetInfo.TabIndex = 0;
             btnGetInfo.Text = "Получить информацию о системе";
             btnGetInfo.UseVisualStyleBackColor = true;
-            btnGetInfo.Click += btnGetInfo_Click;
+            //btnGetInfo.Click += btnGetInfo_Click;
             // 
             // treeViewInfo
             // 
@@ -95,8 +95,8 @@
         #endregion
 
         private System.Windows.Forms.Button btnGetInfo;
-        private System.Windows.Forms.TreeView treeViewInfo; // Объявляем TreeView
-        private System.Windows.Forms.DataVisualization.Charting.Chart chartCPU; // Объявляем график CPU
-        private System.Windows.Forms.DataVisualization.Charting.Chart chartRAM; // Объявляем график RAM
+        private System.Windows.Forms.TreeView treeViewInfo;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartCPU;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartRAM;
     }
 }
