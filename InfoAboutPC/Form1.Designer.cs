@@ -28,73 +28,69 @@
         /// </summary>
         private void InitializeComponent()
         {
-            btnGetInfo = new Button();
             treeViewInfo = new TreeView();
             chartCPU = new System.Windows.Forms.DataVisualization.Charting.Chart();
             chartRAM = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            TableLayoutPanel tableLayoutPanel = new TableLayoutPanel();
+
             ((System.ComponentModel.ISupportInitialize)(chartCPU)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(chartRAM)).BeginInit();
             SuspendLayout();
+
             // 
-            // btnGetInfo
+            // tableLayoutPanel
             // 
-            this.btnGetInfo.Dock = System.Windows.Forms.DockStyle.Top;
-            btnGetInfo.Location = new Point(14, 14);
-            btnGetInfo.Margin = new Padding(4, 3, 4, 3);
-            btnGetInfo.Name = "btnGetInfo";
-            btnGetInfo.Size = new Size(303, 27);
-            btnGetInfo.TabIndex = 0;
-            btnGetInfo.Text = "Получить информацию о системе";
-            btnGetInfo.UseVisualStyleBackColor = true;
-            //btnGetInfo.Click += btnGetInfo_Click;
+            tableLayoutPanel.ColumnCount = 3; // Три столбца
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F)); // Равное деление
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
+            tableLayoutPanel.RowCount = 1; // Один ряд
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Занимает всю высоту
+            tableLayoutPanel.Dock = DockStyle.Fill;
+
             // 
             // treeViewInfo
             // 
-            this.treeViewInfo.Dock = System.Windows.Forms.DockStyle.Left;
-            treeViewInfo.Location = new Point(14, 58);
-            treeViewInfo.Margin = new Padding(4, 3, 4, 3);
+            treeViewInfo.Dock = DockStyle.Fill; // Заполняет ячейку
             treeViewInfo.Name = "treeViewInfo";
-            treeViewInfo.Size = new Size(400, 500);
-            treeViewInfo.TabIndex = 1;
+            treeViewInfo.Margin = new Padding(0); // Убираем отступы
+
             // 
             // chartCPU
             // 
-            chartCPU.Dock = DockStyle.Right;
-            chartCPU.Location = new Point(317, 58);
+            chartCPU.Dock = DockStyle.Fill; // Заполняет ячейку
             chartCPU.Name = "chartCPU";
-            chartCPU.Size = new Size(470, 200);
-            chartCPU.TabIndex = 2;
-            chartCPU.Text = "chartCPU";
+            chartCPU.Margin = new Padding(0); // Убираем отступы
+
             // 
             // chartRAM
             // 
-            chartRAM.Dock = DockStyle.Bottom;
-            chartRAM.Location = new Point(14, 288);
+            chartRAM.Dock = DockStyle.Fill; // Заполняет ячейку
             chartRAM.Name = "chartRAM";
-            chartRAM.Size = new Size(773, 182);
-            chartRAM.TabIndex = 3;
-            chartRAM.Text = "chartRAM";
+            chartRAM.Margin = new Padding(0); // Убираем отступы
+
+            // Добавляем элементы в TableLayoutPanel
+            tableLayoutPanel.Controls.Add(treeViewInfo, 0, 0); // Первый столбец
+            tableLayoutPanel.Controls.Add(chartCPU, 1, 0); // Второй столбец
+            tableLayoutPanel.Controls.Add(chartRAM, 2, 0); // Третий столбец
+
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(792, 482);
-            Controls.Add(chartRAM);
-            Controls.Add(treeViewInfo);
-            Controls.Add(chartCPU);
-            Controls.Add(btnGetInfo);
-            Margin = new Padding(4, 3, 4, 3);
+            ClientSize = new Size(800, 600); // Устанавливаем фиксированный размер формы
+            Controls.Add(tableLayoutPanel); // Добавляем TableLayoutPanel
             Name = "Form1";
             Text = "Утилита для сбора информации о системе";
+
             ((System.ComponentModel.ISupportInitialize)(chartCPU)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(chartRAM)).EndInit();
             ResumeLayout(false);
         }
 
-        #endregion
 
-        private System.Windows.Forms.Button btnGetInfo;
+        #endregion
         private System.Windows.Forms.TreeView treeViewInfo;
         private System.Windows.Forms.DataVisualization.Charting.Chart chartCPU;
         private System.Windows.Forms.DataVisualization.Charting.Chart chartRAM;

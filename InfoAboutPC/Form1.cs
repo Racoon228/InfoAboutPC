@@ -16,12 +16,13 @@ namespace InfoAboutPC
             InitializeComponent();
             InitializePerformanceCounters();
             SetupCharts();
+            GetSystemInfo();
         }
 
         private void InitializePerformanceCounters()
         {
             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            ramCounter = new PerformanceCounter("Memory", "%Commited Bytes In Use");
+            ramCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
             timer = new System.Windows.Forms.Timer();
             timer.Interval = 1000;
             timer.Tick += Timer_Tick;
@@ -49,7 +50,7 @@ namespace InfoAboutPC
                 ChartType = SeriesChartType.Line,
                 Color = Color.Red,
                 BorderWidth = 2,
-                IsValueShownAsLabel = true
+                IsValueShownAsLabel = false
             };
             chartCPU.Series.Add(seriesCPU);
 
@@ -60,7 +61,7 @@ namespace InfoAboutPC
                 ChartType = SeriesChartType.Line,
                 Color = Color.Blue,
                 BorderWidth = 2,
-                IsValueShownAsLabel = true
+                IsValueShownAsLabel = false
             };
             chartRAM.Series.Add(seriesRAM);
         }
@@ -79,20 +80,36 @@ namespace InfoAboutPC
             }
             systemInfoNode.Nodes.Add(osNode);
 
-            var userInfoNode = new TreeNode("Информация о пользователе");
-            userInfoNode.Nodes.Add($"Имя компьютера: {Environment.MachineName}\n");
-            userInfoNode.Nodes.Add($"Пользователь: {Environment.UserName}\n");
-            systemInfoNode.Nodes.Add(userInfoNode);
-
             var processorNode = new TreeNode("Процессор");
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_Processor"))
             {
                 foreach (ManagementObject obj in searcher.Get())
                 {
-                    processorNode.Nodes.Add($"Процессор: {obj["Name"]}\n");
+                    foreach (PropertyData property in obj.Properties)
+                    {
+                        string propertyName = property.Name;
+                        string propertyValue = property.Value?.ToString() ?? "Не доступно";
+                        processorNode.Nodes.Add($"{propertyName}: {propertyValue}");
+                    }
                 }
             }
             systemInfoNode.Nodes.Add(processorNode);
+
+            var gpuNode = new TreeNode("Видеокарта");
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_VideoController"))
+            {
+                foreach (ManagementObject obj in searcher.Get())
+                {
+                    string name = obj["Name"]?.ToString() ?? "Не доступно";
+                    string memory = (obj["AdapterRAM"] != null ? Convert.ToInt64(obj["AdapterRAM"]) / (1024 * 1024) + " MB" : "Не доступно");
+                    string driverVersion = obj["DriverVersion"]?.ToString() ?? "Не доступно";
+
+                    gpuNode.Nodes.Add($"Название: {name}");
+                    gpuNode.Nodes.Add($"Память: {memory}");
+                    gpuNode.Nodes.Add($"Версия драйвера: {driverVersion}");
+                }
+            }
+            systemInfoNode.Nodes.Add(gpuNode);
 
             var memoryNode = new TreeNode("Оперативная память");
             using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_PhysicalMemory"))
@@ -106,7 +123,23 @@ namespace InfoAboutPC
             }
             systemInfoNode.Nodes.Add(memoryNode);
 
-            string ipAddress = GetLocalIPAddress(); systemInfoNode.Nodes.Add($"IP-адрес: {ipAddress}\n");
+            var virtualMemoryNode = new TreeNode("Виртуальная память");
+            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("select * from Win32_OperatingSystem"))
+            {
+                foreach (ManagementObject obj in searcher.Get())
+                {
+                    string totalVirtualMemory = Convert.ToInt64(obj["TotalVirtualMemorySize"]) / 1024 + " MB";
+                    string freeVirtualMemory = Convert.ToInt64(obj["FreeVirtualMemory"]) / 1024 + " MB";
+                    long usedVirtualMemoryBytes = Convert.ToInt64(obj["TotalVirtualMemorySize"]) - Convert.ToInt64(obj["FreeVirtualMemory"]);
+                    string usedVirtualMemory = usedVirtualMemoryBytes / 1024 + " MB";
+
+                    virtualMemoryNode.Nodes.Add($"Общий объем: {totalVirtualMemory}");
+                    virtualMemoryNode.Nodes.Add($"Свободно: {freeVirtualMemory}");
+                    virtualMemoryNode.Nodes.Add($"Используется: {usedVirtualMemory}");
+                }
+            }
+            systemInfoNode.Nodes.Add(virtualMemoryNode);
+            treeViewInfo.Nodes.Add(systemInfoNode);
 
             var disksNode = new TreeNode("Диски");
             foreach (var drive in DriveInfo.GetDrives())
@@ -122,29 +155,39 @@ namespace InfoAboutPC
                 }
             }
             systemInfoNode.Nodes.Add(disksNode);
-            treeViewInfo.Nodes.Add(systemInfoNode);
-        }
 
-        private string GetLocalIPAddress()
-        {
-            string localIP = "Не удалось получить IP-адрес";
-            try
+            var fileTypesNode = new TreeNode("Файловые типы");
+
+            using (var classesRoot = Microsoft.Win32.Registry.ClassesRoot)
             {
-                var host = Dns.GetHostEntry(Dns.GetHostName());
-                foreach (var ip in host.AddressList)
+                foreach (var subKeyName in classesRoot.GetSubKeyNames())
                 {
-                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    if (subKeyName.StartsWith("."))
                     {
-                        localIP = ip.ToString();
-                        break;
+                        var subKey = classesRoot.OpenSubKey(subKeyName);
+
+                        string fileType = subKey?.GetValue("")?.ToString() ?? "Не указан";
+
+                        var extensionNode = new TreeNode($"Расширение: {subKeyName}");
+                        extensionNode.Nodes.Add($"Тип файла: {fileType}");
+
+                        if (!string.IsNullOrEmpty(fileType))
+                        {
+                            var typeKey = classesRoot.OpenSubKey(fileType);
+                            if (typeKey != null)
+                            {
+                                foreach (var valueName in typeKey.GetValueNames())
+                                {
+                                    string value = typeKey.GetValue(valueName)?.ToString() ?? "Не доступно";
+                                    extensionNode.Nodes.Add($"{valueName}: {value}");
+                                }
+                            }
+                        }
+                        fileTypesNode.Nodes.Add(extensionNode);
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                localIP = ex.Message;
-            }
-            return localIP;
+            treeViewInfo.Nodes.Add(fileTypesNode);
         }
     }
 }
